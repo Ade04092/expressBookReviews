@@ -1,3 +1,5 @@
+cd /home/project/expressBookReviews/final_project/router
+cat > auth_users.js <<'EOF'
 const express = require('express');
 const jwt = require('jsonwebtoken');
 let books = require("./booksdb.js");
@@ -22,7 +24,7 @@ regd_users.post("/login", (req, res) => {
   }
 
   if (authenticatedUser(username, password)) {
-    let accessToken = jwt.sign({ data: username }, "access", { expiresIn: 3600 });
+    let accessToken = jwt.sign({ data: username }, "access", { expiresIn: 60 * 60 });
 
     req.session.authorization = {
       accessToken,
@@ -40,21 +42,28 @@ regd_users.put("/auth/review/:isbn", (req, res) => {
   const review = req.query.review;
   const username = req.session.authorization.username;
 
+  if (!books[isbn]) {
+    return res.status(404).json({ message: "Book not found" });
+  }
+
   books[isbn].reviews[username] = review;
 
   return res.status(200).json({
-    message: "Review added/updated successfully",
-    reviews: books[isbn].reviews
-  });
+  message: "Review added/updated successfully",
+  reviews: books[isbn].reviews
 });
 
 regd_users.delete("/auth/review/:isbn", (req, res) => {
   const isbn = req.params.isbn;
   const username = req.session.authorization.username;
 
+  if (!books[isbn]) {
+    return res.status(404).json({ message: "Book not found" });
+  }
+
   if (books[isbn].reviews[username]) {
     delete books[isbn].reviews[username];
-    return res.status(200).json({ message: "Review deleted successfully" });
+    return res.status(200).json({ message: "Review successfully deleted" });
   }
 
   return res.status(404).json({ message: "Review not found" });
@@ -63,3 +72,4 @@ regd_users.delete("/auth/review/:isbn", (req, res) => {
 module.exports.authenticated = regd_users;
 module.exports.isValid = isValid;
 module.exports.users = users;
+EOF
